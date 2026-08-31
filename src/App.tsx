@@ -1,47 +1,42 @@
-import React, { useEffect, useState } from 'react';
 import classNames from 'classnames';
-
+/*eslint-disable*/
 import 'bulma/css/bulma.css';
 import '@fortawesome/fontawesome-free/css/all.css';
 import './App.scss';
 
-import { PostsList } from './components/PostsList';
+import { useEffect } from 'react';
 import { PostDetails } from './components/PostDetails';
 import { UserSelector } from './components/UserSelector';
 import { Loader } from './components/Loader';
-import { getUserPosts } from './api/posts';
-import { User } from './types/User';
-import { Post } from './types/Post';
+import { useAppDispatch, useAppSelector } from './app/hooks';
+import { fetchUsers } from './app/Users';
+import { fetchPostsByUser, togglePostId } from './app/Posts';
 
-export const App: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [hasError, setError] = useState(false);
+export const App = () => {
+  const dispatch = useAppDispatch();
 
-  const [author, setAuthor] = useState<User | null>(null);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-
-  function loadUserPosts(userId: number) {
-    setLoaded(false);
-
-    getUserPosts(userId)
-      .then(setPosts)
-      .catch(() => setError(true))
-      // We disable the spinner in any case
-      .finally(() => setLoaded(true));
-  }
+  const {
+    items: allPost,
+    loading: thisLoader,
+    error: smthwrong,
+    selectedUserId: ChosenId,
+    selectedPostId: postId,
+  } = useAppSelector(state => state.posts);
 
   useEffect(() => {
-    // we clear the post when an author is changed
-    // not to confuse the user
-    setSelectedPost(null);
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
-    if (author) {
-      loadUserPosts(author.id);
-    } else {
-      setPosts([]);
+  useEffect(() => {
+    if (ChosenId === 0) {
+      return;
     }
-  }, [author]);
+
+    dispatch(fetchPostsByUser(ChosenId));
+  }, [dispatch, ChosenId]);
+
+  const chosedPost = allPost.find(post => post.id === postId);
+  const SpostsExist = allPost.length > 0;
 
   return (
     <main className="section">
@@ -50,15 +45,16 @@ export const App: React.FC = () => {
           <div className="tile is-parent">
             <div className="tile is-child box is-success">
               <div className="block">
-                <UserSelector value={author} onChange={setAuthor} />
+                <UserSelector />
               </div>
-
               <div className="block" data-cy="MainContent">
-                {!author && <p data-cy="NoSelectedUser">No user selected</p>}
+                {ChosenId === 0 && (
+                  <p data-cy="NoSelectedUser">No user selected</p>
+                )}
 
-                {author && !loaded && <Loader />}
+                {thisLoader && <Loader />}
 
-                {author && loaded && hasError && (
+                {smthwrong && (
                   <div
                     className="notification is-danger"
                     data-cy="PostsLoadingError"
@@ -67,18 +63,60 @@ export const App: React.FC = () => {
                   </div>
                 )}
 
-                {author && loaded && !hasError && posts.length === 0 && (
-                  <div className="notification is-warning" data-cy="NoPostsYet">
-                    No posts yet
-                  </div>
-                )}
+                {ChosenId !== 0 &&
+                  !thisLoader &&
+                  !smthwrong &&
+                  !SpostsExist && (
+                    <div
+                      className="notification is-warning"
+                      data-cy="NoPostsYet"
+                    >
+                      No posts yet
+                    </div>
+                  )}
 
-                {author && loaded && !hasError && posts.length > 0 && (
-                  <PostsList
-                    posts={posts}
-                    selectedPostId={selectedPost?.id}
-                    onPostSelected={setSelectedPost}
-                  />
+                {SpostsExist && (
+                  <div className="block" data-cy="PostsList">
+                    <p className="title is-4">Posts:</p>
+                    <table className="table is-fullwidth is-striped is-hoverable">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Title</th>
+                          <th className="has-text-right"> </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {allPost.map(post => (
+                          <tr key={post.id} data-cy="Post">
+                            <td
+                              className="has-text-weight-bold"
+                              data-cy="PostId"
+                            >
+                              {post.id}
+                            </td>
+                            <td>{post.title}</td>
+                            <td className="has-text-right is-vcentered">
+                              <button
+                                type="button"
+                                className={classNames(
+                                  'button',
+                                  'is-link',
+                                  'is-small',
+                                  { 'is-light': post.id !== postId },
+                                )}
+                                data-cy="PostButton"
+                                onClick={() => dispatch(togglePostId(post.id))}
+                              >
+                                {post.id === postId ? 'Close' : 'Open'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </div>
@@ -91,13 +129,11 @@ export const App: React.FC = () => {
               'is-parent',
               'is-8-desktop',
               'Sidebar',
-              {
-                'Sidebar--open': selectedPost,
-              },
+              { 'Sidebar--open': postId !== 0 },
             )}
           >
             <div className="tile is-child box is-success ">
-              {selectedPost && <PostDetails post={selectedPost} />}
+              {chosedPost && <PostDetails chosedPost={chosedPost} />}
             </div>
           </div>
         </div>
