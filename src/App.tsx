@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-/*eslint-disable*/
+
 import 'bulma/css/bulma.css';
 import '@fortawesome/fontawesome-free/css/all.css';
 import './App.scss';
@@ -10,17 +10,18 @@ import { UserSelector } from './components/UserSelector';
 import { Loader } from './components/Loader';
 import { useAppDispatch, useAppSelector } from './app/hooks';
 import { fetchUsers } from './app/Users';
-import { fetchPostsByUser, togglePostId } from './app/Posts';
+import { fetchPostsByUser, clearPosts } from './app/Posts';
+import { setSelectedPost } from './app/selectedPost';
 
 export const App = () => {
   const dispatch = useAppDispatch();
 
+  const { value: author } = useAppSelector(state => state.author);
+  const { value: selectedPost } = useAppSelector(state => state.selectedPost);
   const {
     items: allPost,
-    loading: thisLoader,
-    error: smthwrong,
-    selectedUserId: ChosenId,
-    selectedPostId: postId,
+    loaded,
+    hasError,
   } = useAppSelector(state => state.posts);
 
   useEffect(() => {
@@ -28,15 +29,18 @@ export const App = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (ChosenId === 0) {
+    dispatch(setSelectedPost(null));
+
+    if (!author) {
+      dispatch(clearPosts());
+
       return;
     }
 
-    dispatch(fetchPostsByUser(ChosenId));
-  }, [dispatch, ChosenId]);
+    dispatch(fetchPostsByUser(author.id));
+  }, [dispatch, author]);
 
-  const chosedPost = allPost.find(post => post.id === postId);
-  const SpostsExist = allPost.length > 0;
+  const postsExist = allPost.length > 0;
 
   return (
     <main className="section">
@@ -48,13 +52,11 @@ export const App = () => {
                 <UserSelector />
               </div>
               <div className="block" data-cy="MainContent">
-                {ChosenId === 0 && (
-                  <p data-cy="NoSelectedUser">No user selected</p>
-                )}
+                {!author && <p data-cy="NoSelectedUser">No user selected</p>}
 
-                {thisLoader && <Loader />}
+                {author && !loaded && <Loader />}
 
-                {smthwrong && (
+                {author && loaded && hasError && (
                   <div
                     className="notification is-danger"
                     data-cy="PostsLoadingError"
@@ -63,21 +65,16 @@ export const App = () => {
                   </div>
                 )}
 
-                {ChosenId !== 0 &&
-                  !thisLoader &&
-                  !smthwrong &&
-                  !SpostsExist && (
-                    <div
-                      className="notification is-warning"
-                      data-cy="NoPostsYet"
-                    >
-                      No posts yet
-                    </div>
-                  )}
+                {author && loaded && !hasError && !postsExist && (
+                  <div className="notification is-warning" data-cy="NoPostsYet">
+                    No posts yet
+                  </div>
+                )}
 
-                {SpostsExist && (
+                {author && loaded && !hasError && postsExist && (
                   <div className="block" data-cy="PostsList">
                     <p className="title is-4">Posts:</p>
+                    {/* eslint-disable */}
                     <table className="table is-fullwidth is-striped is-hoverable">
                       <thead>
                         <tr>
@@ -104,12 +101,24 @@ export const App = () => {
                                   'button',
                                   'is-link',
                                   'is-small',
-                                  { 'is-light': post.id !== postId },
+                                  {
+                                    'is-light': selectedPost?.id !== post.id,
+                                  },
                                 )}
                                 data-cy="PostButton"
-                                onClick={() => dispatch(togglePostId(post.id))}
+                                onClick={() =>
+                                  dispatch(
+                                    setSelectedPost(
+                                      selectedPost?.id === post.id
+                                        ? null
+                                        : post,
+                                    ),
+                                  )
+                                }
                               >
-                                {post.id === postId ? 'Close' : 'Open'}
+                                {selectedPost?.id === post.id
+                                  ? 'Close'
+                                  : 'Open'}
                               </button>
                             </td>
                           </tr>
@@ -129,11 +138,11 @@ export const App = () => {
               'is-parent',
               'is-8-desktop',
               'Sidebar',
-              { 'Sidebar--open': postId !== 0 },
+              { 'Sidebar--open': selectedPost !== null },
             )}
           >
             <div className="tile is-child box is-success ">
-              {chosedPost && <PostDetails chosedPost={chosedPost} />}
+              {selectedPost && <PostDetails chosedPost={selectedPost} />}
             </div>
           </div>
         </div>

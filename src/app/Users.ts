@@ -4,10 +4,14 @@ import { client } from '../utils/fetchClient';
 /*eslint-disable*/
 export interface UsersState {
   items: User[];
+  loaded: boolean;
+  hasError: boolean;
 }
 
 const initialState: UsersState = {
   items: [],
+  loaded: false,
+  hasError: false,
 };
 
 export const fetchUsers = createAsyncThunk('users/fetchAll', () => {
@@ -19,8 +23,18 @@ export const usersSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: builder => {
-    builder.addCase(fetchUsers.fulfilled, (state, action) => {
-      state.items = action.payload;
-    });
+    builder
+      .addCase(fetchUsers.pending, state => {
+        state.loaded = false;
+        state.hasError = false;
+      })
+      .addCase(fetchUsers.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.loaded = true;
+      })
+      .addCase(fetchUsers.rejected, state => {
+        state.loaded = true;
+        state.hasError = true;
+      });
   },
 });

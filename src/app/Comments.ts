@@ -11,16 +11,16 @@ interface NewCommentData {
 
 export interface CommentsState {
   items: Comment[];
-  loading: boolean;
-  error: boolean;
+  loaded: boolean;
+  hasError: boolean;
   adding: boolean;
   isFormOpen: boolean;
 }
 
 const initialState: CommentsState = {
   items: [],
-  loading: false,
-  error: false,
+  loaded: false,
+  hasError: false,
   adding: false,
   isFormOpen: false,
 };
@@ -59,17 +59,17 @@ export const commentsSlice = createSlice({
   extraReducers: builder => {
     builder
       .addCase(fetchComments.pending, state => {
-        state.loading = true;
-        state.error = false;
+        state.loaded = false;
+        state.hasError = false;
         state.isFormOpen = false;
       })
       .addCase(fetchComments.fulfilled, (state, action) => {
         state.items = action.payload;
-        state.loading = false;
+        state.loaded = true;
       })
       .addCase(fetchComments.rejected, state => {
-        state.loading = false;
-        state.error = true;
+        state.loaded = true;
+        state.hasError = true;
       })
       .addCase(addComment.pending, state => {
         state.adding = true;

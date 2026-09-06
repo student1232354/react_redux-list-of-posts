@@ -14,8 +14,8 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
 
   const {
     items: allComments,
-    loading: loaderss,
-    error: smthwrong,
+    loaded,
+    hasError,
     isFormOpen,
   } = useAppSelector(state => state.comments);
 
@@ -40,21 +40,21 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
       </div>
 
       <div className="block">
-        {loaderss && <Loader />}
+        {!loaded && <Loader />}
 
-        {!loaderss && smthwrong && (
+        {loaded && hasError && (
           <div className="notification is-danger" data-cy="CommentsError">
             Something went wrong
           </div>
         )}
 
-        {!loaderss && !smthwrong && !howmany && (
+        {loaded && !hasError && !howmany && (
           <p className="title is-4" data-cy="NoCommentsMessage">
             No comments yet
           </p>
         )}
 
-        {!loaderss && !smthwrong && howmany && (
+        {loaded && !hasError && howmany && (
           <>
             <p className="title is-4">Comments:</p>
 
@@ -85,7 +85,7 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
           </>
         )}
 
-        {!loaderss && !smthwrong && !isFormOpen && (
+        {loaded && !hasError && !isFormOpen && (
           <button
             data-cy="WriteCommentButton"
             type="button"
@@ -97,7 +97,7 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
         )}
       </div>
 
-      {!loaderss && !smthwrong && isFormOpen && (
+      {loaded && !hasError && isFormOpen && (
         <NewCommentForm postId={chosedPost.id} />
       )}
     </div>
