@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { Comment } from '../types/Comment';
 import { client } from '../utils/fetchClient';
 /*eslint-disable*/
@@ -51,11 +51,7 @@ export const deleteComment = createAsyncThunk(
 export const commentsSlice = createSlice({
   name: 'comments',
   initialState,
-  reducers: {
-    setFormOpen: (state, action: PayloadAction<boolean>) => {
-      state.isFormOpen = action.payload;
-    },
-  },
+  reducers: {},
   extraReducers: builder => {
     builder
       .addCase(fetchComments.pending, state => {
@@ -89,4 +85,4 @@ export const commentsSlice = createSlice({
   },
 });
 
-export const { setFormOpen } = commentsSlice.actions;
+export default commentsSlice.reducer;

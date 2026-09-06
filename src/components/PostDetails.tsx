@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Loader } from './Loader';
 import { NewCommentForm } from './NewCommentForm';
 import { Post } from '../types/Post';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
-import { fetchComments, deleteComment, setFormOpen } from '../app/Comments';
+import { fetchComments, deleteComment } from '../app/Comments';
 
 interface Props {
   chosedPost: Post;
@@ -16,11 +16,13 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
     items: allComments,
     loaded,
     hasError,
-    isFormOpen,
   } = useAppSelector(state => state.comments);
+
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     dispatch(fetchComments(chosedPost.id));
+    setVisible(false);
   }, [dispatch, chosedPost.id]);
 
   const howmany = allComments.length > 0;
@@ -35,10 +37,8 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
         <h2 className="title is-3" data-cy="PostTitle">
           #{chosedPost.id}: {chosedPost.title}
         </h2>
-
         <p data-cy="PostBody">{chosedPost.body}</p>
       </div>
-
       <div className="block">
         {!loaded && <Loader />}
 
@@ -68,6 +68,7 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
                   <a href={`mailto:${comment.email}`} data-cy="CommentAuthor">
                     {comment.name}
                   </a>
+
                   <button
                     data-cy="CommentDelete"
                     type="button"
@@ -85,19 +86,18 @@ export const PostDetails: React.FC<Props> = ({ chosedPost }) => {
           </>
         )}
 
-        {loaded && !hasError && !isFormOpen && (
+        {loaded && !hasError && !visible && (
           <button
             data-cy="WriteCommentButton"
             type="button"
             className="button is-link"
-            onClick={() => dispatch(setFormOpen(true))}
+            onClick={() => setVisible(true)}
           >
             Write a comment
           </button>
         )}
       </div>
-
-      {loaded && !hasError && isFormOpen && (
+      {loaded && !hasError && visible && (
         <NewCommentForm postId={chosedPost.id} />
       )}
     </div>
